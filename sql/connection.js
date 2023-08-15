@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const mysql = require('mysql');
 
-//functin based
+//function based
 
 
 // make an async call to test the connection
@@ -45,7 +45,53 @@ let connection = mysql.createConnection(
       
       
 //       //make the connection
-connection.connect()
+connection.connect();
+
+
+// mysql doesn't include a method that handles promises, just callbacks
+// the data base doesnt care. It's just revieving queries and returning results it processes says, and returns results
+// if we want to use promises, we either find a module that handles mysql promises (and learn to use it)
+// or we can build our own middleware function that does if for us
+
+// basic wrapper promise if you just want to CONVERT A CALLBACK TO FUNCTION
+// we'll use this when we build our authorization
+connection.queryPromise = (sql, params) => {
+  return new Promise((resolve, reject) => {
+    connection.query(sql, params, (err, rows) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    })
+  })
+}; // end
+
+// go farther, and if you want to process the results of your promis and return the results
+// you want to make a blocking function that always returns an err or rows
+
+connection.querySync = async (sql, params) => {
+  let promise = new Promise((resolve, reject) => {
+    console.log("Executing query", sql);
+    connection.query(sql, params, (err, results) => {
+      if (err) {
+        console.log("rejecting");
+        return reject(err);
+      } else {
+        console.log("resolving");
+        return resolve(results);
+      }
+    })
+  })
+  let results = await promise.then((results) => {
+    console.log("results ", results);
+    return results;
+  }).catch((err) => {
+    throw err;
+  })
+  return results;
+}; // end
+
 
 connection.query("select now()", (err, rows) => {
   if(err) {
